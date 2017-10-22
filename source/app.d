@@ -5,6 +5,7 @@ import image : PPMImage;
 import vec;
 import hitable;
 import ray;
+import material;
 
 import numir;
 import mir.ndslice;
@@ -27,11 +28,16 @@ struct Camera {
 
 
 
-Vec color(Ray r, Hitable world, double minEps=1e-3) {
+Vec color(Ray r, Hitable world, long depth, double minEps=1e-3) {
     auto rec = initHitRecord();
     if (world.hit(r, minEps, double.max, rec)) {
-        auto target = rec.normal + randomSphereVec();
-        return (0.5 * color(Ray(rec.point, target.slice), world)).slice;
+        Ray scattered;
+        Vec attenuation;
+        if (depth < 50 && rec.material.scatter(r, rec, attenuation, scattered)) {
+            return slice(attenuation * color(scattered, world, depth + 1));
+        } else {
+            return zeros(3);
+        }
     }
     auto scale = 0.5 * (r.direction.unit.y + 1.0);
     auto rgb = (1.0 - scale) * Color.white.vec3 + scale * Color.skyblue.vec3;
@@ -49,16 +55,13 @@ void main()
     };
 
     auto img = PPMImage(400, 200);
-    auto nalias = 100;
-
-    auto lowerLeft = [-2.0, -1.0, -1.0].vec3;
-    auto horizontal = [4.0, 0.0, 0.0].vec3;
-    auto vertical = [0.0, 2.0, 0.0].vec3;
-    auto origin = [0.0, 0.0, 0.0].vec3;
+    auto nalias = 10;
 
     Hitable[] list = [
-        new Sphere([0.0, 0.0, -1.0].vec3, 0.5),
-        new Sphere([0.0, -100.5, -1.0].vec3, 100)
+        new Sphere([0.0, 0.0, -1.0].vec3, 0.5, new Lambertian([0.8, 0.3, 0.3].vec3)),
+        new Sphere([0.0, -100.5, -1.0].vec3, 100, new Lambertian([0.8, 0.8, 0.0].vec3)),
+        new Sphere([1.0, 0.0, -1.0].vec3, 0.5, new Metal([0.8, 0.6, 0.2].vec3, 1.0)),
+        new Sphere([-1.0, 0.0, -1.0].vec3, 0.5, new Metal([0.8, 0.8, 0.8].vec3, 0.3))
         ];
     Hitable world= new HitableList(list);
     foreach (i, j, pixel; img) {
@@ -68,7 +71,7 @@ void main()
             auto u = (cast(double) i + us[n, 0]) / img.width;
             auto v = (cast(double) j + us[n, 1]) / img.height;
             auto r = camera.ray(u, v);
-            col[] += color(r, world);
+            col[] += color(r, world, 0);
         }
         pixel[] = (col / nalias) ^^ 0.5;
     }

@@ -40,6 +40,14 @@ auto randomSphereVec() {
     return u;
 }
 
+auto reflect(V1, V2)(V1 v, V2 n) pure @nogc if (isVec!V1 && isVec!V2) {
+    import std.numeric : dotProduct;
+    enum a = [3LU];
+    assert(v.shape == a);
+    assert(n.shape == a);
+    return v - 2.0 * dotProduct(v, n) * n;
+}
+
 unittest {
     import std.math : approxEqual;
     Vec v = vec3([0.0, 4.0, 3.0]);

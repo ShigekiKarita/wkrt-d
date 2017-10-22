@@ -14,7 +14,7 @@ struct PPMImage {
     const max = 255L;
 
     this(long width, long height, long max=255) {
-        this.data = empty!ElemType(width, height, 3).universal;
+        this.data = zeros!ElemType(width, height, 3).universal;
         this.max = max;
     }
 

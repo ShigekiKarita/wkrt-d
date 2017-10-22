@@ -2,6 +2,7 @@ module hitable;
 
 import vec;
 import ray;
+import material : Material;
 
 import std.numeric : dotProduct;
 
@@ -9,6 +10,7 @@ import std.numeric : dotProduct;
 struct HitRecord {
     double scale;
     Vec point, normal;
+    Material material;
 }
 
 auto initHitRecord() {
@@ -16,19 +18,23 @@ auto initHitRecord() {
 }
 
 interface Hitable {
-    bool hit(Ray r, double scaleMin, double scaleMax, ref HitRecord rec) const pure;
+    bool hit(Ray r, double scaleMin, double scaleMax, ref HitRecord rec);
 }
 
 class Sphere : Hitable {
     Vec center;
     double radius;
+    Material material;
 
-    this(Vec c, double r) pure @nogc {
+    this(Vec c, double r, Material m) pure @nogc {
         this.center = c;
         this.radius = r;
+        this.material = m;
     }
 
-    override bool hit(Ray r, double scaleMin, double scaleMax, ref HitRecord rec) const pure @nogc {
+    override bool hit(Ray r, double scaleMin, double scaleMax, ref HitRecord rec) {
+        rec.material = this.material;
+        // rec = HitRecord(rec.scale, rec.point, rec.normal, this.material);
         auto oc = r.origin - this.center;
         const a = r.direction.squaredRadius;
         const b = 2.0 * dotProduct(oc, r.direction);
@@ -54,7 +60,7 @@ class HitableList : Hitable {
 
     this(Hitable[] hs) { this.list = hs; }
 
-    override bool hit(Ray r, double scaleMin, double scaleMax, ref HitRecord rec) const pure {
+    override bool hit(Ray r, double scaleMin, double scaleMax, ref HitRecord rec) {
         auto tmprec = initHitRecord();
         bool hitAny = false;
         double closest = scaleMax;
