@@ -31,9 +31,19 @@ auto unit(V)(V v) pure @nogc if (isVec!V) {
     return v / v.radius;
 }
 
+auto randomSphereVec() {
+    // TODO: make uniform @nogc
+    auto u = 2.0 * uniform(3) - 1.0;
+    while (u.squaredRadius >= 1.0) {
+        u = 2.0 * uniform(3) - 1.0;
+    }
+    return u;
+}
+
 unittest {
     import std.math : approxEqual;
     Vec v = vec3([0.0, 4.0, 3.0]);
     assert(approxEqual(v.radius, 5.0));
     assert(approxEqual(v.unit, [0.0, 4.0/5.0, 3.0/5.0]));
+    assert(randomSphereVec().squaredRadius < 1.0);
 }
